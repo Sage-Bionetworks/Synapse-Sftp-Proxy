@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	version="2.5">
+
+	<!-- The context params that read by ContextLoaderListener -->
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>/WEB-INF/sftp-proxy-context.xml</param-value>
+	</context-param>
+
+	<!-- This listener will load other application context file in addition 
+		to springweb-servlet.xml -->
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+
+	<filter>
+		<filter-name>guiceFilter</filter-name>
+		<filter-class>com.google.inject.servlet.GuiceFilter</filter-class>
+	</filter>
+
+	<!-- This filter allows us to use Guice for dependency injection in the 
+		server side servlets -->
+	<filter-mapping>
+		<filter-name>guiceFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+
+
+	<!-- This is where we register the ServerModule containing all of the mapping 
+		with Guice. -->
+	<listener>
+		<listener-class>org.sagebionetworks.web.server.SftpProxyContextListener</listener-class>
+	</listener>
+
+
+	<!-- Default page to serve -->
+	<welcome-file-list>
+		<welcome-file>SftpProxy.html</welcome-file>
+	</welcome-file-list>
+
+</web-app>
