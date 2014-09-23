@@ -1,6 +1,7 @@
 package org.sagebionetworks.web.server.servlet.filter;
 
 import java.io.IOException;
+import java.util.StringTokenizer;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -18,31 +19,50 @@ public class BasicAuthFilter implements Filter {
 	public void destroy() {
 	}
 
-	public void doFilter(ServletRequest servletRequest,
-			ServletResponse servletResponse, FilterChain chain)
-			throws IOException, ServletException {
+	public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain) throws IOException, ServletException {
 
 		HttpServletRequest request = (HttpServletRequest) servletRequest;
 		HttpServletResponse response = (HttpServletResponse) servletResponse;
-		Boolean requestIsAuthorized = true;
-
+		Credentials credentials = getCredentials(request);
+		Boolean requestIsAuthorized = credentials != null;
 
 		if (requestIsAuthorized) {
 			// proceed
 			chain.doFilter(request, response);
 		} else {
-			//challenge
-			response.setStatus(HttpStatus.FORBIDDEN.value());
-			response.setHeader("WWW-Authenticate", "authenticate simpleAuth");
+			// challenge
+			//http://docs.oracle.com/cd/E21455_01/common/tutorials/authn_http_basic.html
+			//respond with a 401
+			response.sendError(HttpStatus.UNAUTHORIZED.value(), "SFTP Login");
 		}
-		
 	}
 
+	public static Credentials getCredentials(HttpServletRequest request) {
+		String authHeader = request.getHeader("Authorization");
+		if (authHeader != null) {
+			StringTokenizer st = new StringTokenizer(authHeader);
+			if (st.hasMoreTokens()) {
+				String basic = st.nextToken();
+				if (basic.equalsIgnoreCase(HttpServletRequest.BASIC_AUTH)) {
+					sun.misc.BASE64Decoder dec = new sun.misc.BASE64Decoder();
+					try {
+						String credentials = new String(dec.decodeBuffer(st.nextToken()));
+						int p = credentials.indexOf(":");
+						if (p != -1) {
+							String login = credentials.substring(0, p).trim();
+							String password = credentials.substring(p + 1).trim();
+							return new Credentials(login, password);
+						}
+					} catch (IOException e) {
+						return null;
+					}
+				}
+			}
+		}
+		return null;
+	}
 
 	public void init(FilterConfig arg0) throws ServletException {
 	}
 
-	
-	
-	
 }
