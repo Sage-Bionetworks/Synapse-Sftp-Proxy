@@ -17,11 +17,11 @@ public class SftpProxyServletModule extends ServletModule {
 	@Override
 	protected void configureServlets() {
 		//look for basic authentication (for sftp request)
-		filter("/Sftpproxy/*").through(BasicAuthFilter.class);
+		filter("/sftp*").through(BasicAuthFilter.class);
 		bind(BasicAuthFilter.class).in(Singleton.class);
 		
 		//do sftp operations
 		bind(SftpProxyServlet.class).in(Singleton.class);
-		serve("/Sftpproxy/sftp").with(SftpProxyServlet.class);
+		serve("/sftp").with(SftpProxyServlet.class);
 	}
 }

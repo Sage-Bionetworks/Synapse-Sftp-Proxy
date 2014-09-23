@@ -33,7 +33,9 @@ public class BasicAuthFilter implements Filter {
 			// challenge
 			//http://docs.oracle.com/cd/E21455_01/common/tutorials/authn_http_basic.html
 			//respond with a 401
-			response.sendError(HttpStatus.UNAUTHORIZED.value(), "SFTP Login");
+			response.setStatus(HttpStatus.UNAUTHORIZED.value());
+			String host = request.getParameter("host");
+			response.setHeader("WWW-Authenticate", "BASIC realm=\""+host+"\"");
 		}
 	}
 

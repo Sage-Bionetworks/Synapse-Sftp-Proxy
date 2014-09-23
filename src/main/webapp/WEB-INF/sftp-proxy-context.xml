@@ -9,6 +9,4 @@
 
 	<context:annotation-config />
 
-	<import resource="classpath:portal-application-context.spb.xml" />
-
 </beans>
