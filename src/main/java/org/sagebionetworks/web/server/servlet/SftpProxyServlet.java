@@ -18,6 +18,7 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.http.HttpStatus;
 import org.sagebionetworks.web.server.servlet.filter.BasicAuthFilter;
 import org.sagebionetworks.web.server.servlet.filter.Credentials;
+import org.sagebionetworks.web.server.servlet.filter.SFTPFileMetadata;
 
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelSftp;
@@ -27,6 +28,7 @@ import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
 public class SftpProxyServlet extends HttpServlet {
+	public static final String SFTP_URL_PARAM = "url";
 	private static final long serialVersionUID = 1L;
 	private JSch jsch = new JSch();
 	protected static final ThreadLocal<HttpServletRequest> perThreadRequest = new ThreadLocal<HttpServletRequest>();
@@ -37,26 +39,42 @@ public class SftpProxyServlet extends HttpServlet {
 		super.service(arg0, arg1);
 	}
 
-	public void sftpUploadFile(HttpServletRequest request) throws FileUploadException, IOException, ServletException {
+	public String sftpUploadFile(HttpServletRequest request, SFTPFileMetadata metadata) throws FileUploadException, IOException, ServletException {
 		ServletFileUpload upload = new ServletFileUpload();
 		FileItemIterator iter = upload.getItemIterator(request);
-		while (iter.hasNext()) {
+		if (iter.hasNext()) {
 			// should be one in this case
 			FileItemStream item = iter.next();
 			String name = item.getFieldName();
 			InputStream stream = item.openStream();
-			String fileName = item.getName();
-			if (fileName.contains("\\")) {
-				fileName = fileName.substring(fileName.lastIndexOf("\\") + 1);
+			
+			String fileNameSuffix = item.getName();
+			if (fileNameSuffix.contains("\\")) {
+				fileNameSuffix = fileNameSuffix.substring(fileNameSuffix.lastIndexOf("\\") + 1);
 			}
-
-			Session session = getSession(request);
+			
+			Session session = null;
 			try {
+				session = getSession(request, metadata);
 				Channel channel = session.openChannel("sftp");
 				channel.connect();
 				ChannelSftp sftpChannel = (ChannelSftp) channel;
-				sftpChannel.put(stream, fileName);
+				//change directory (and make directory if not exist)
+				for (String directory : metadata.getPath()) {
+					try{
+						sftpChannel.cd(directory);
+					} catch (SftpException e) {
+						//cannot access, try to create and go there
+						sftpChannel.mkdir(directory);
+						sftpChannel.cd(directory);
+					}
+				}
+				sftpChannel.put(stream, metadata.getFilename() + fileNameSuffix);
 				sftpChannel.exit();
+				
+				return metadata.getFullUrl() + fileNameSuffix;
+			} catch (SecurityException e) {
+				throw e;
 			} catch (JSchException e) {
 				throw new ServletException(e);
 			} catch (SftpException e) {
@@ -66,23 +84,24 @@ public class SftpProxyServlet extends HttpServlet {
 					session.disconnect();
 			}
 		}
+		return null;
 	}
 	
-	private Session getSession(HttpServletRequest request) throws ServletException {
-		Credentials credentials = BasicAuthFilter.getCredentials(request);
-		if (credentials == null) {
-			throw new ServletException("Basic authorization required for SFTP connection.");
-		}
+	private Session getSession(HttpServletRequest request, SFTPFileMetadata metadata) throws SecurityException {
+		Session session;
 		try {
-			String host = request.getParameter("host");
-			Session session = jsch.getSession(credentials.getUsername(), host, 22);
+			Credentials credentials = BasicAuthFilter.getCredentials(request);
+			if (credentials == null) {
+				throw new IllegalArgumentException("Basic authorization required for SFTP connection.");
+			}
+			session = jsch.getSession(credentials.getUsername(), metadata.getHost(), 22);
 			session.setPassword(credentials.getPassword());
 			session.setConfig("StrictHostKeyChecking", "no");
 			session.connect();
-			return session;
-		} catch (JSchException e) {
-			throw new ServletException(e);
+		} catch (Throwable e) {
+			throw new SecurityException(e);
 		}
+		return session;
 	}
 
 	@Override
@@ -93,14 +112,17 @@ public class SftpProxyServlet extends HttpServlet {
 	@Override
 	public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		ServletOutputStream stream = response.getOutputStream();
-		Session session = getSession(request);
-		String path = request.getParameter("path");
+		SFTPFileMetadata metadata = SFTPFileMetadata.parseUrl(request.getParameter(SFTP_URL_PARAM));
+		Session session = null;
 		try {
+			session = getSession(request, metadata);
 			Channel channel = session.openChannel("sftp");
 			channel.connect();
 			ChannelSftp sftpChannel = (ChannelSftp) channel;
-			sftpChannel.get(path, stream);
+			sftpChannel.get(metadata.getSourcePathWithFilename(), stream);
 			sftpChannel.exit();
+		} catch (SecurityException e) {
+			BasicAuthFilter.respondWithChallenge(response, metadata.getHost());
 		} catch (JSchException e) {
 			throw new ServletException(e);
 		} catch (SftpException e) {
@@ -113,9 +135,15 @@ public class SftpProxyServlet extends HttpServlet {
 	
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		SFTPFileMetadata metadata = SFTPFileMetadata.parseUrl(request.getParameter(SFTP_URL_PARAM));
 		try {
-			sftpUploadFile(request);
+			String sftpUrl = sftpUploadFile(request, metadata);
 			response.setStatus(HttpStatus.SC_OK);
+			//return the path to the client
+			response.getOutputStream().write(sftpUrl.getBytes("UTF-8"));
+			response.getOutputStream().flush();
+		} catch (SecurityException e) {
+			BasicAuthFilter.respondWithChallenge(response, metadata.getHost());
 		} catch (FileUploadException e) {
 			throw new ServletException(e);
 		}

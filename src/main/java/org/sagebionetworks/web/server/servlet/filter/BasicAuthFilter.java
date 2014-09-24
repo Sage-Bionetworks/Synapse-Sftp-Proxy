@@ -12,6 +12,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.sagebionetworks.web.server.servlet.SftpProxyServlet;
 import org.springframework.http.HttpStatus;
 
 public class BasicAuthFilter implements Filter {
@@ -31,14 +32,20 @@ public class BasicAuthFilter implements Filter {
 			chain.doFilter(request, response);
 		} else {
 			// challenge
-			//http://docs.oracle.com/cd/E21455_01/common/tutorials/authn_http_basic.html
-			//respond with a 401
-			response.setStatus(HttpStatus.UNAUTHORIZED.value());
-			String host = request.getParameter("host");
-			response.setHeader("WWW-Authenticate", "BASIC realm=\""+host+"\"");
+			SFTPFileMetadata metadata = SFTPFileMetadata.parseUrl(request.getParameter(SftpProxyServlet.SFTP_URL_PARAM));
+			respondWithChallenge(response, metadata.getHost());
 		}
 	}
 
+	public static void respondWithChallenge(HttpServletResponse response, String host) {
+		// challenge
+		//http://docs.oracle.com/cd/E21455_01/common/tutorials/authn_http_basic.html
+		//respond with a 401 asking for basic http authentication
+		response.setStatus(HttpStatus.UNAUTHORIZED.value());
+		response.setHeader("WWW-Authenticate", HttpServletRequest.BASIC_AUTH + " realm=\"Connection to "+host+ "\"");
+
+	}
+	
 	public static Credentials getCredentials(HttpServletRequest request) {
 		String authHeader = request.getHeader("Authorization");
 		if (authHeader != null) {
