@@ -28,85 +28,22 @@ import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
 public class SftpProxyServlet extends HttpServlet {
+	public static final String SFTP_CHANNEL_TYPE = "sftp";
 	public static final String SFTP_URL_PARAM = "url";
 	private static final long serialVersionUID = 1L;
+	
 	private JSch jsch = new JSch();
 	protected static final ThreadLocal<HttpServletRequest> perThreadRequest = new ThreadLocal<HttpServletRequest>();
 
 	@Override
-	protected void service(HttpServletRequest arg0, HttpServletResponse arg1) throws ServletException, IOException {
-		SftpProxyServlet.perThreadRequest.set(arg0);
-		super.service(arg0, arg1);
-	}
-
-	public String sftpUploadFile(HttpServletRequest request, SFTPFileMetadata metadata) throws FileUploadException, IOException, ServletException {
-		ServletFileUpload upload = new ServletFileUpload();
-		FileItemIterator iter = upload.getItemIterator(request);
-		if (iter.hasNext()) {
-			// should be one in this case
-			FileItemStream item = iter.next();
-			String name = item.getFieldName();
-			InputStream stream = item.openStream();
-			
-			String fileNameSuffix = item.getName();
-			if (fileNameSuffix.contains("\\")) {
-				fileNameSuffix = fileNameSuffix.substring(fileNameSuffix.lastIndexOf("\\") + 1);
-			}
-			
-			Session session = null;
-			try {
-				session = getSession(request, metadata);
-				Channel channel = session.openChannel("sftp");
-				channel.connect();
-				ChannelSftp sftpChannel = (ChannelSftp) channel;
-				//change directory (and make directory if not exist)
-				for (String directory : metadata.getPath()) {
-					try{
-						sftpChannel.cd(directory);
-					} catch (SftpException e) {
-						//cannot access, try to create and go there
-						sftpChannel.mkdir(directory);
-						sftpChannel.cd(directory);
-					}
-				}
-				sftpChannel.put(stream, metadata.getFilename() + fileNameSuffix);
-				sftpChannel.exit();
-				
-				return metadata.getFullUrl() + fileNameSuffix;
-			} catch (SecurityException e) {
-				throw e;
-			} catch (JSchException e) {
-				throw new ServletException(e);
-			} catch (SftpException e) {
-				throw new ServletException(e);
-			} finally {
-				if (session != null)
-					session.disconnect();
-			}
-		}
-		return null;
+	protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		SftpProxyServlet.perThreadRequest.set(request);
+		super.service(request, response);
 	}
 	
-	private Session getSession(HttpServletRequest request, SFTPFileMetadata metadata) throws SecurityException {
-		Session session;
-		try {
-			Credentials credentials = BasicAuthFilter.getCredentials(request);
-			if (credentials == null) {
-				throw new IllegalArgumentException("Basic authorization required for SFTP connection.");
-			}
-			session = jsch.getSession(credentials.getUsername(), metadata.getHost(), 22);
-			session.setPassword(credentials.getPassword());
-			session.setConfig("StrictHostKeyChecking", "no");
-			session.connect();
-		} catch (Throwable e) {
-			throw new SecurityException(e);
-		}
-		return session;
-	}
-
 	@Override
-	public void service(ServletRequest arg0, ServletResponse arg1) throws ServletException, IOException {
-		super.service(arg0, arg1);
+	public void service(ServletRequest request, ServletResponse response) throws ServletException, IOException {
+		super.service(request, response);
 	}
 
 	@Override
@@ -116,7 +53,7 @@ public class SftpProxyServlet extends HttpServlet {
 		Session session = null;
 		try {
 			session = getSession(request, metadata);
-			Channel channel = session.openChannel("sftp");
+			Channel channel = session.openChannel(SFTP_CHANNEL_TYPE);
 			channel.connect();
 			ChannelSftp sftpChannel = (ChannelSftp) channel;
 			sftpChannel.get(metadata.getSourcePathWithFilename(), stream);
@@ -148,4 +85,78 @@ public class SftpProxyServlet extends HttpServlet {
 			throw new ServletException(e);
 		}
 	}
+	
+	public String sftpUploadFile(HttpServletRequest request, SFTPFileMetadata metadata) throws FileUploadException, IOException, ServletException {
+		ServletFileUpload upload = new ServletFileUpload();
+		FileItemIterator iter = upload.getItemIterator(request);
+		if (iter.hasNext()) {
+			// should be one in this case
+			FileItemStream item = iter.next();
+			String name = item.getFieldName();
+			InputStream stream = item.openStream();
+			
+			String fileNameSuffix = item.getName();
+			if (fileNameSuffix.contains("\\")) {
+				fileNameSuffix = fileNameSuffix.substring(fileNameSuffix.lastIndexOf("\\") + 1);
+			}
+			
+			Session session = null;
+			try {
+				session = getSession(request, metadata);
+				Channel channel = session.openChannel(SFTP_CHANNEL_TYPE);
+				channel.connect();
+				ChannelSftp sftpChannel = (ChannelSftp) channel;
+				//change directory (and make directory if not exist)
+				for (String directory : metadata.getPath()) {
+					try{
+						sftpChannel.cd(directory);
+					} catch (SftpException e) {
+						//cannot access, try to create and go there
+						sftpChannel.mkdir(directory);
+						sftpChannel.cd(directory);
+					}
+				}
+				sftpChannel.put(stream, metadata.getFilename() + fileNameSuffix);
+				sftpChannel.exit();
+				
+				return metadata.getFullUrl() + fileNameSuffix;
+			} catch (SecurityException e) {
+				throw e;
+			} catch (JSchException e) {
+				throw new ServletException(e);
+			} catch (SftpException e) {
+				throw new ServletException(e);
+			} finally {
+				if (session != null)
+					session.disconnect();
+			}
+		}
+		return null;
+	}
+	
+	public Session getSession(HttpServletRequest request, SFTPFileMetadata metadata) throws SecurityException {
+		Session session;
+		try {
+			Credentials credentials = BasicAuthFilter.getCredentials(request);
+			if (credentials == null) {
+				throw new IllegalArgumentException("Basic authorization required for SFTP connection.");
+			}
+			session = jsch.getSession(credentials.getUsername(), metadata.getHost(), 22);
+			session.setPassword(credentials.getPassword());
+			session.setConfig("StrictHostKeyChecking", "no");
+			session.connect();
+		} catch (Throwable e) {
+			throw new SecurityException(e);
+		}
+		return session;
+	}
+
+	/**
+	 * For testing purposes
+	 * @param jsch
+	 */
+	public void setJsch(JSch jsch) {
+		this.jsch = jsch;
+	}
+
 }
