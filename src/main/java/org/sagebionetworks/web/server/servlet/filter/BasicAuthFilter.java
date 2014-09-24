@@ -12,10 +12,13 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.codec.binary.Base64;
 import org.sagebionetworks.web.server.servlet.SftpProxyServlet;
 import org.springframework.http.HttpStatus;
 
 public class BasicAuthFilter implements Filter {
+
+	public static final String AUTHORIZATION_HEADER = "Authorization";
 
 	public void destroy() {
 	}
@@ -46,16 +49,22 @@ public class BasicAuthFilter implements Filter {
 
 	}
 	
+	/**
+	 * Return Credentials from the request header if present. 
+	 * If unavailable, returns null.
+	 * @param request
+	 * @return
+	 */
 	public static Credentials getCredentials(HttpServletRequest request) {
-		String authHeader = request.getHeader("Authorization");
+		String authHeader = request.getHeader(AUTHORIZATION_HEADER);
 		if (authHeader != null) {
 			StringTokenizer st = new StringTokenizer(authHeader);
 			if (st.hasMoreTokens()) {
 				String basic = st.nextToken();
 				if (basic.equalsIgnoreCase(HttpServletRequest.BASIC_AUTH)) {
-					sun.misc.BASE64Decoder dec = new sun.misc.BASE64Decoder();
 					try {
-						String credentials = new String(dec.decodeBuffer(st.nextToken()));
+						byte[] decodedBytes = Base64.decodeBase64(st.nextToken().getBytes());
+						String credentials = new String(decodedBytes, "UTF-8");
 						int p = credentials.indexOf(":");
 						if (p != -1) {
 							String login = credentials.substring(0, p).trim();

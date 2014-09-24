@@ -106,16 +106,7 @@ public class SftpProxyServlet extends HttpServlet {
 				Channel channel = session.openChannel(SFTP_CHANNEL_TYPE);
 				channel.connect();
 				ChannelSftp sftpChannel = (ChannelSftp) channel;
-				//change directory (and make directory if not exist)
-				for (String directory : metadata.getPath()) {
-					try{
-						sftpChannel.cd(directory);
-					} catch (SftpException e) {
-						//cannot access, try to create and go there
-						sftpChannel.mkdir(directory);
-						sftpChannel.cd(directory);
-					}
-				}
+				changeToRemoteUploadDirectory(metadata, sftpChannel);
 				sftpChannel.put(stream, metadata.getFilename() + fileNameSuffix);
 				sftpChannel.exit();
 				
@@ -132,6 +123,19 @@ public class SftpProxyServlet extends HttpServlet {
 			}
 		}
 		return null;
+	}
+	
+	public void changeToRemoteUploadDirectory(SFTPFileMetadata metadata, ChannelSftp sftpChannel) throws SftpException {
+		//change directory (and make directory if not exist)
+		for (String directory : metadata.getPath()) {
+			try{
+				sftpChannel.cd(directory);
+			} catch (SftpException e) {
+				//cannot access, try to create and go there
+				sftpChannel.mkdir(directory);
+				sftpChannel.cd(directory);
+			}
+		}
 	}
 	
 	public Session getSession(HttpServletRequest request, SFTPFileMetadata metadata) throws SecurityException {
