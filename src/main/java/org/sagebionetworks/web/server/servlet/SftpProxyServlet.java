@@ -2,6 +2,7 @@ package org.sagebionetworks.web.server.servlet;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -15,7 +16,10 @@ import org.apache.commons.fileupload.FileItemIterator;
 import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.http.HttpStatus;
+import org.sagebionetworks.repo.model.attachment.UploadResult;
+import org.sagebionetworks.repo.model.attachment.UploadStatus;
+import org.sagebionetworks.schema.adapter.JSONObjectAdapterException;
+import org.sagebionetworks.schema.adapter.org.json.EntityFactory;
 import org.sagebionetworks.web.server.servlet.filter.BasicAuthFilter;
 import org.sagebionetworks.web.server.servlet.filter.Credentials;
 import org.sagebionetworks.web.server.servlet.filter.SFTPFileMetadata;
@@ -74,11 +78,7 @@ public class SftpProxyServlet extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		SFTPFileMetadata metadata = SFTPFileMetadata.parseUrl(request.getParameter(SFTP_URL_PARAM));
 		try {
-			String sftpUrl = sftpUploadFile(request, metadata);
-			response.setStatus(HttpStatus.SC_OK);
-			//return the path to the client
-			response.getOutputStream().write(sftpUrl.getBytes("UTF-8"));
-			response.getOutputStream().flush();
+			sftpUploadFile(request, metadata, response);
 		} catch (SecurityException e) {
 			BasicAuthFilter.respondWithChallenge(response, metadata.getHost());
 		} catch (FileUploadException e) {
@@ -86,7 +86,7 @@ public class SftpProxyServlet extends HttpServlet {
 		}
 	}
 	
-	public String sftpUploadFile(HttpServletRequest request, SFTPFileMetadata metadata) throws FileUploadException, IOException, ServletException {
+	public void sftpUploadFile(HttpServletRequest request, SFTPFileMetadata metadata, HttpServletResponse response) throws FileUploadException, IOException, ServletException {
 		ServletFileUpload upload = new ServletFileUpload();
 		FileItemIterator iter = upload.getItemIterator(request);
 		if (iter.hasNext()) {
@@ -110,19 +110,17 @@ public class SftpProxyServlet extends HttpServlet {
 				sftpChannel.put(stream, metadata.getFilename() + fileNameSuffix);
 				sftpChannel.exit();
 				
-				return metadata.getFullUrl() + fileNameSuffix;
+				fillResponseWithSuccess(response, metadata.getFullUrl() + fileNameSuffix);
 			} catch (SecurityException e) {
 				throw e;
-			} catch (JSchException e) {
-				throw new ServletException(e);
-			} catch (SftpException e) {
-				throw new ServletException(e);
+			} catch (Exception e) {
+				fillResponseWithFailure(response, e);
+				return;
 			} finally {
 				if (session != null)
 					session.disconnect();
 			}
 		}
-		return null;
 	}
 	
 	public void changeToRemoteUploadDirectory(SFTPFileMetadata metadata, ChannelSftp sftpChannel) throws SftpException {
@@ -163,4 +161,30 @@ public class SftpProxyServlet extends HttpServlet {
 		this.jsch = jsch;
 	}
 
+	
+	public static void fillResponseWithSuccess(HttpServletResponse response, String url) throws JSONObjectAdapterException, UnsupportedEncodingException, IOException {
+		UploadResult result = new UploadResult();
+		result.setMessage(url);
+		
+		result.setUploadStatus(UploadStatus.SUCCESS);
+		String out = EntityFactory.createJSONStringForEntity(result);
+		response.setStatus(HttpServletResponse.SC_CREATED);
+		response.getOutputStream().write(out.getBytes("UTF-8"));
+		response.getOutputStream().flush();
+	}
+	
+	public static void fillResponseWithFailure(HttpServletResponse response, Exception e) throws UnsupportedEncodingException, IOException {
+		UploadResult result = new UploadResult();
+		result.setMessage(e.getMessage());
+		result.setUploadStatus(UploadStatus.FAILED);
+		String out;
+		try {
+			out = EntityFactory.createJSONStringForEntity(result);
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.getOutputStream().write(out.getBytes("UTF-8"));
+			response.getOutputStream().flush();
+		} catch (JSONObjectAdapterException e1) {
+			throw new RuntimeException(e1);
+		}
+	}
 }

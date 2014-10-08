@@ -12,6 +12,8 @@
 	<properties>
 		<maven.compiler.source>1.6</maven.compiler.source>
 		<maven.compiler.target>1.6</maven.compiler.target>
+		
+		<synapse.version>2014-09-22-1409-0629fdc</synapse.version>
 		<webappDirectory>${project.build.directory}/${project.build.finalName}</webappDirectory>
 		<gwtVersion>2.5.1</gwtVersion>
 		<org.springframework.version>4.0.2.RELEASE</org.springframework.version>
@@ -231,6 +233,17 @@
 		</plugins>
 	</build>
 	<dependencies>
+		<dependency>
+			<groupId>org.sagebionetworks</groupId>
+			<artifactId>lib-shared-models</artifactId>
+			<version>${synapse.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.sagebionetworks</groupId>
+			<artifactId>synapseJavaClient</artifactId>
+			<version>${synapse.version}</version>
+		</dependency>
+	
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-core</artifactId>
