@@ -45,7 +45,7 @@ public class BasicAuthFilter implements Filter {
 		//http://docs.oracle.com/cd/E21455_01/common/tutorials/authn_http_basic.html
 		//respond with a 401 asking for basic http authentication
 		response.setStatus(HttpStatus.UNAUTHORIZED.value());
-		response.setHeader("WWW-Authenticate", HttpServletRequest.BASIC_AUTH + " realm=\"Connection to "+host+ "\"");
+		response.setHeader("WWW-Authenticate", HttpServletRequest.BASIC_AUTH + " realm=\"You must sign in to access "+host+ "\"");
 
 	}
 	
