@@ -143,7 +143,7 @@ public class SftpProxyServlet extends HttpServlet {
 			if (credentials == null) {
 				throw new IllegalArgumentException("Basic authorization required for SFTP connection.");
 			}
-			session = jsch.getSession(credentials.getUsername(), metadata.getHost(), 22);
+			session = jsch.getSession(credentials.getUsername(), metadata.getHost(), metadata.getPort());
 			session.setPassword(credentials.getPassword());
 			session.setConfig("StrictHostKeyChecking", "no");
 			session.connect();
