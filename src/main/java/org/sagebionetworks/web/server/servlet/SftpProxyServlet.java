@@ -60,7 +60,7 @@ public class SftpProxyServlet extends HttpServlet {
 			Channel channel = session.openChannel(SFTP_CHANNEL_TYPE);
 			channel.connect();
 			ChannelSftp sftpChannel = (ChannelSftp) channel;
-			sftpChannel.get(metadata.getSourcePathWithFilename(), stream);
+			sftpChannel.get(metadata.getSourcePath(), stream);
 			sftpChannel.exit();
 		} catch (SecurityException e) {
 			BasicAuthFilter.respondWithChallenge(response, metadata.getHost());
@@ -95,9 +95,9 @@ public class SftpProxyServlet extends HttpServlet {
 			String name = item.getFieldName();
 			InputStream stream = item.openStream();
 			
-			String fileNameSuffix = item.getName();
-			if (fileNameSuffix.contains("\\")) {
-				fileNameSuffix = fileNameSuffix.substring(fileNameSuffix.lastIndexOf("\\") + 1);
+			String fileName = item.getName();
+			if (fileName.contains("\\")) {
+				fileName = fileName.substring(fileName.lastIndexOf("\\") + 1);
 			}
 			
 			Session session = null;
@@ -107,10 +107,10 @@ public class SftpProxyServlet extends HttpServlet {
 				channel.connect();
 				ChannelSftp sftpChannel = (ChannelSftp) channel;
 				changeToRemoteUploadDirectory(metadata, sftpChannel);
-				sftpChannel.put(stream, metadata.getFilename() + fileNameSuffix);
+				sftpChannel.put(stream, fileName);
 				sftpChannel.exit();
 				
-				fillResponseWithSuccess(response, metadata.getFullUrl() + fileNameSuffix);
+				fillResponseWithSuccess(response, metadata.getFullUrl() + "/" + fileName);
 			} catch (SecurityException e) {
 				throw e;
 			} catch (Exception e) {
@@ -161,7 +161,6 @@ public class SftpProxyServlet extends HttpServlet {
 		this.jsch = jsch;
 	}
 
-	
 	public static void fillResponseWithSuccess(HttpServletResponse response, String url) throws JSONObjectAdapterException, UnsupportedEncodingException, IOException {
 		UploadResult result = new UploadResult();
 		result.setMessage(url);

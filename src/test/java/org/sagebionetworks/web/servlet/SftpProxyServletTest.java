@@ -60,7 +60,7 @@ public class SftpProxyServletTest {
 		String dir2 = "d2";
 		path.add(dir1);
 		path.add(dir2);
-		SFTPFileMetadata metadata = new SFTPFileMetadata("sagebase.org", "007", path);
+		SFTPFileMetadata metadata = new SFTPFileMetadata("sagebase.org", path);
 		servlet.changeToRemoteUploadDirectory(metadata, mockChannel);
 		
 		//and verify the values
@@ -76,7 +76,7 @@ public class SftpProxyServletTest {
 		List<String> path = new ArrayList<String>();
 		String dir1 = "d1";
 		path.add(dir1);
-		SFTPFileMetadata metadata = new SFTPFileMetadata("sagebase.org", "007", path);
+		SFTPFileMetadata metadata = new SFTPFileMetadata("sagebase.org", path);
 		//initially throw an exception, then do nothing (do not throw an exception on the "cd" command)
 		doThrow(new SftpException(1, "fake exception when changing directory")).doNothing().when(mockChannel).cd(anyString());
 		servlet.changeToRemoteUploadDirectory(metadata, mockChannel);
@@ -88,7 +88,7 @@ public class SftpProxyServletTest {
 	@Test
 	public void testChangeToRemoteUploadDirectoryEmpty() throws SftpException {
 		List<String> path = new ArrayList<String>();
-		SFTPFileMetadata metadata = new SFTPFileMetadata("sagebase.org", "007", path);
+		SFTPFileMetadata metadata = new SFTPFileMetadata("sagebase.org", path);
 		servlet.changeToRemoteUploadDirectory(metadata, mockChannel);
 		
 		verify(mockChannel, never()).cd(anyString());

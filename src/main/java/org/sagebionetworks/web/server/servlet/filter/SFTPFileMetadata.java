@@ -6,36 +6,31 @@ import java.util.StringTokenizer;
 
 public class SFTPFileMetadata {
 	public static final int DEFAULT_PORT = 22;
-	private String host, filename;
+	private String host;
 	private List<String> path;
 	public static final String SFTP_PREFIX = "sftp://";
 	private int port;
 	
-	public SFTPFileMetadata(String host, String filename, List<String> path) {
-		this(host, filename, path, DEFAULT_PORT);
+	public SFTPFileMetadata(String host, List<String> path) {
+		this(host, path, DEFAULT_PORT);
 	}
 		
-	public SFTPFileMetadata(String host, String filename, List<String> path, int port) {
+	public SFTPFileMetadata(String host, List<String> path, int port) {
 		super();
 		this.host = host;
-		this.filename = filename;
 		this.path = path;
 		this.port = port;
 	}
 	
 	public String getFullUrl() {
-		return SFTP_PREFIX + host + ":" + port +"/" + getSourcePath() + filename;
-	}
-	
-	public String getSourcePathWithFilename() {
-		return getSourcePath() + filename;
+		return SFTP_PREFIX + host + ":" + port + getSourcePath();
 	}
 	
 	public String getSourcePath() {
 		StringBuilder src = new StringBuilder();
 		for (String pathElement : path) {
-			src.append(pathElement);
 			src.append("/");
+			src.append(pathElement);
 		}
 		return src.toString();
 	}
@@ -69,21 +64,13 @@ public class SFTPFileMetadata {
 			port = Integer.parseInt(hostTokens[1]);
 		}
 		List<String> path = new ArrayList<String>();
-		String filename = null;
 		while(tokenizer.hasMoreTokens()) {
 			//now start adding tokens to the path, until we reach the final token (which is the filename)
 			String currentToken = tokenizer.nextToken();
-			if (tokenizer.hasMoreTokens())
-				path.add(currentToken);
-			else
-				filename = currentToken;
+			path.add(currentToken);
 		}
 		
-		return new SFTPFileMetadata(host, filename, path, port);
-	}
-	
-	public String getFilename() {
-		return filename;
+		return new SFTPFileMetadata(host, path, port);
 	}
 	
 	public String getHost() {
