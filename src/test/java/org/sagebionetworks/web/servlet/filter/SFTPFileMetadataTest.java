@@ -18,8 +18,9 @@ public class SFTPFileMetadataTest {
 		assertEquals(url, metadata.getFullUrl());
 		assertEquals(host, metadata.getHost());
 		assertEquals(port, metadata.getPort());
-		assertTrue(metadata.getPath().isEmpty());
-
+		assertEquals(1, metadata.getPath().size());
+		assertEquals(baseFilename, metadata.getPath().get(0));
+		
 		// in subdirectory
 		String dir1 = "foo";
 		String dir2 = "bar";
@@ -28,9 +29,10 @@ public class SFTPFileMetadataTest {
 		assertEquals(url, metadata.getFullUrl());
 		assertEquals(host, metadata.getHost());
 		assertEquals(port, metadata.getPort());
-		assertEquals(2, metadata.getPath().size());
+		assertEquals(3, metadata.getPath().size());
 		assertEquals(dir1, metadata.getPath().get(0));
 		assertEquals(dir2, metadata.getPath().get(1));
+		assertEquals(baseFilename, metadata.getPath().get(2));
 	}
 
 	@Test
@@ -46,7 +48,8 @@ public class SFTPFileMetadataTest {
 		SFTPFileMetadata metadata = SFTPFileMetadata.parseUrl(url);
 		assertEquals(expectedFullUrl, metadata.getFullUrl());
 		assertEquals(host, metadata.getHost());
-		assertTrue(metadata.getPath().isEmpty());
+		assertEquals(1, metadata.getPath().size());
+		assertEquals(baseFilename, metadata.getPath().get(0));
 		assertEquals(SFTPFileMetadata.DEFAULT_PORT, metadata.getPort());
 	}
 	
