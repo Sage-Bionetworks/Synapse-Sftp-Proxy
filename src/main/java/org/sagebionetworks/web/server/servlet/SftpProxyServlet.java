@@ -169,8 +169,9 @@ public class SftpProxyServlet extends HttpServlet {
 		String out = EntityFactory.createJSONStringForEntity(result);
 		response.setStatus(HttpServletResponse.SC_CREATED);
 		response.setCharacterEncoding("UTF-8");
-		response.setContentLength(out.length());
-		response.getOutputStream().write(out.getBytes("UTF-8"));
+		byte[] outBytes = out.getBytes("UTF-8");
+		response.setContentLength(outBytes.length);
+		response.getOutputStream().write(outBytes);
 	}
 	
 	public static void fillResponseWithFailure(HttpServletResponse response, Exception e) throws UnsupportedEncodingException, IOException {
@@ -182,8 +183,9 @@ public class SftpProxyServlet extends HttpServlet {
 			out = EntityFactory.createJSONStringForEntity(result);
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			response.setCharacterEncoding("UTF-8");
-			response.setContentLength(out.length());
-			response.getOutputStream().write(out.getBytes("UTF-8"));
+			byte[] outBytes = out.getBytes("UTF-8");
+			response.setContentLength(outBytes.length);
+			response.getOutputStream().write(outBytes);
 		} catch (JSONObjectAdapterException e1) {
 			throw new RuntimeException(e1);
 		}
