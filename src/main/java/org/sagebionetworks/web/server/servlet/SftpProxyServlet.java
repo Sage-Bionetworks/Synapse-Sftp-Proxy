@@ -174,6 +174,7 @@ public class SftpProxyServlet extends HttpServlet {
 		response.setContentLength(out.length());
 		PrintWriter writer = response.getWriter();
 		writer.println(out);
+		writer.close();
 	}
 	
 	public static void fillResponseWithFailure(HttpServletResponse response, Exception e) throws UnsupportedEncodingException, IOException {
@@ -188,6 +189,7 @@ public class SftpProxyServlet extends HttpServlet {
 			response.setContentLength(out.length());
 			PrintWriter writer = response.getWriter();
 			writer.println(out);
+			writer.close();
 		} catch (JSONObjectAdapterException e1) {
 			throw new RuntimeException(e1);
 		}
