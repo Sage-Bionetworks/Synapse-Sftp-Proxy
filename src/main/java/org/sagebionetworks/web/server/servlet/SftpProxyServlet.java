@@ -2,7 +2,6 @@ package org.sagebionetworks.web.server.servlet;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 
 import javax.servlet.ServletException;
@@ -122,7 +121,6 @@ public class SftpProxyServlet extends HttpServlet {
 					session.disconnect();
 			}
 		}
-		response.flushBuffer();
 	}
 	
 	public void changeToRemoteUploadDirectory(SFTPFileMetadata metadata, ChannelSftp sftpChannel) throws SftpException {
@@ -172,9 +170,7 @@ public class SftpProxyServlet extends HttpServlet {
 		response.setStatus(HttpServletResponse.SC_CREATED);
 		response.setCharacterEncoding("UTF-8");
 		response.setContentLength(out.length());
-		PrintWriter writer = response.getWriter();
-		writer.println(out);
-		writer.close();
+		response.getOutputStream().write(out.getBytes("UTF-8"));
 	}
 	
 	public static void fillResponseWithFailure(HttpServletResponse response, Exception e) throws UnsupportedEncodingException, IOException {
@@ -187,9 +183,7 @@ public class SftpProxyServlet extends HttpServlet {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			response.setCharacterEncoding("UTF-8");
 			response.setContentLength(out.length());
-			PrintWriter writer = response.getWriter();
-			writer.println(out);
-			writer.close();
+			response.getOutputStream().write(out.getBytes("UTF-8"));
 		} catch (JSONObjectAdapterException e1) {
 			throw new RuntimeException(e1);
 		}
