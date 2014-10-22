@@ -166,26 +166,41 @@ public class SftpProxyServlet extends HttpServlet {
 		result.setMessage(url);
 		
 		result.setUploadStatus(UploadStatus.SUCCESS);
-		String out = EntityFactory.createJSONStringForEntity(result);
+		String uploadResultJson = EntityFactory.createJSONStringForEntity(result);
 		response.setStatus(HttpServletResponse.SC_CREATED);
 		response.setCharacterEncoding("UTF-8");
-		response.setContentLength(out.length());
-		response.getOutputStream().write(out.getBytes("UTF-8"));
+		String out = getPostMessageResponsePage(uploadResultJson);
+		byte[] outBytes = out.getBytes("UTF-8");
+		response.getOutputStream().write(outBytes);
 	}
 	
 	public static void fillResponseWithFailure(HttpServletResponse response, Exception e) throws UnsupportedEncodingException, IOException {
 		UploadResult result = new UploadResult();
 		result.setMessage(e.getMessage());
 		result.setUploadStatus(UploadStatus.FAILED);
-		String out;
 		try {
-			out = EntityFactory.createJSONStringForEntity(result);
+			String uploadResultJson = EntityFactory.createJSONStringForEntity(result);
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			response.setCharacterEncoding("UTF-8");
-			response.setContentLength(out.length());
-			response.getOutputStream().write(out.getBytes("UTF-8"));
+			String out = getPostMessageResponsePage(uploadResultJson);
+			byte[] outBytes = out.getBytes("UTF-8");
+			response.getOutputStream().write(outBytes);
 		} catch (JSONObjectAdapterException e1) {
 			throw new RuntimeException(e1);
 		}
 	}
+	
+	public static String getPostMessageResponsePage(String uploadResultJson) {
+		return String.format(RESPONSE_HTML, uploadResultJson);
+	}
+	
+	public static final String RESPONSE_HTML = "<html>\n" + 
+			"  <body onload=\"javascript:sendMessage()\">\n" + 
+			"	<script>\n" + 
+			"		function sendMessage() {\n" + 
+			"			window.parent.postMessage('%s', '*');\n" + 
+			"		}\n" + 
+			"	</script>\n" + 
+			"  </body>\n" + 
+			"</html>";
 }
