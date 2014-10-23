@@ -168,6 +168,7 @@ public class SftpProxyServlet extends HttpServlet {
 		result.setUploadStatus(UploadStatus.SUCCESS);
 		String uploadResultJson = EntityFactory.createJSONStringForEntity(result);
 		response.setStatus(HttpServletResponse.SC_CREATED);
+		response.setContentType("text/html");
 		response.setCharacterEncoding("UTF-8");
 		String out = getPostMessageResponsePage(uploadResultJson);
 		byte[] outBytes = out.getBytes("UTF-8");
@@ -181,6 +182,7 @@ public class SftpProxyServlet extends HttpServlet {
 		try {
 			String uploadResultJson = EntityFactory.createJSONStringForEntity(result);
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.setContentType("text/html");
 			response.setCharacterEncoding("UTF-8");
 			String out = getPostMessageResponsePage(uploadResultJson);
 			byte[] outBytes = out.getBytes("UTF-8");
