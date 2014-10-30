@@ -2,20 +2,22 @@ package org.sagebionetworks.web.servlet.filter;
 
 import static org.junit.Assert.*;
 
+import java.io.UnsupportedEncodingException;
+
 import org.junit.Test;
 import org.sagebionetworks.web.server.servlet.filter.SFTPFileMetadata;
 
 public class SFTPFileMetadataTest {
 
 	@Test
-	public void testRoundTrip() {
+	public void testRoundTrip() throws UnsupportedEncodingException {
 		String host = "jayhodgson.com";
 		String baseFilename = "1234-567";
 		int port = 23;
 		String url = "sftp://" + host + ":" + port + "/" + baseFilename;
 		// no subdirectory
 		SFTPFileMetadata metadata = SFTPFileMetadata.parseUrl(url);
-		assertEquals(url, metadata.getFullUrl());
+		assertEquals(url, metadata.getFullEncodedUrl());
 		assertEquals(host, metadata.getHost());
 		assertEquals(port, metadata.getPort());
 		assertEquals(1, metadata.getPath().size());
@@ -26,7 +28,7 @@ public class SFTPFileMetadataTest {
 		String dir2 = "bar";
 		url = "sftp://" + host + ":"+port+"/" + dir1 + "/" + dir2 + "/" + baseFilename;
 		metadata = SFTPFileMetadata.parseUrl(url);
-		assertEquals(url, metadata.getFullUrl());
+		assertEquals(url, metadata.getFullEncodedUrl());
 		assertEquals(host, metadata.getHost());
 		assertEquals(port, metadata.getPort());
 		assertEquals(3, metadata.getPath().size());
@@ -36,7 +38,7 @@ public class SFTPFileMetadataTest {
 	}
 
 	@Test
-	public void testDefaultPort() {
+	public void testDefaultPort() throws UnsupportedEncodingException {
 		String host = "jayhodgson.com";
 		String baseFilename = "1234-567";
 		//do not provide the port
@@ -46,11 +48,29 @@ public class SFTPFileMetadataTest {
 		String expectedFullUrl = "sftp://" + host + ":" + SFTPFileMetadata.DEFAULT_PORT + "/" + baseFilename;
 		// no subdirectory
 		SFTPFileMetadata metadata = SFTPFileMetadata.parseUrl(url);
-		assertEquals(expectedFullUrl, metadata.getFullUrl());
+		assertEquals(expectedFullUrl, metadata.getFullEncodedUrl());
 		assertEquals(host, metadata.getHost());
 		assertEquals(1, metadata.getPath().size());
 		assertEquals(baseFilename, metadata.getPath().get(0));
 		assertEquals(SFTPFileMetadata.DEFAULT_PORT, metadata.getPort());
+	}
+	
+	
+	@Test
+	public void testEncodeDecode() throws UnsupportedEncodingException {
+		String host = "jayhodgson.com";
+		String originalSourcePath = "/a subdirectory/1234 (567).txt";
+		int port = 22;
+		String url = "sftp://" + host + ":" + port  + originalSourcePath;
+		// no subdirectory
+		SFTPFileMetadata metadata = SFTPFileMetadata.parseUrl(url);
+		
+		//not equal, but this encoded value is what is saved to the external file entity url
+		assertTrue(!url.equals(metadata.getFullEncodedUrl()));
+		
+		//on download of the sftp file, we need to decode
+		SFTPFileMetadata encodedMetadata = SFTPFileMetadata.parseUrl(metadata.getFullEncodedUrl());
+		assertEquals(originalSourcePath, encodedMetadata.getDecodedSourcePath());
 	}
 	
 	@Test(expected = IllegalArgumentException.class)
@@ -82,5 +102,7 @@ public class SFTPFileMetadataTest {
 	public void testBadPort2() {
 		SFTPFileMetadata.parseUrl("sftp://test:12:34/basefile.txt");
 	}
+	
+	
 
 }
