@@ -3,8 +3,10 @@ package org.sagebionetworks.web.server.servlet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
@@ -24,6 +26,7 @@ import org.sagebionetworks.web.server.servlet.filter.SFTPFileMetadata;
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
@@ -45,26 +48,19 @@ public class SftpProxyServlet extends HttpServlet {
 	public void service(ServletRequest request, ServletResponse response) throws ServletException, IOException {
 		super.service(request, response);
 	}
-
+	
 	@Override
-	public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		throw new ServletException("SFTP download proxy not yet implemented.");
-//		ServletOutputStream stream = response.getOutputStream();
-//		SFTPFileMetadata metadata = SFTPFileMetadata.parseUrl(request.getParameter(SFTP_URL_PARAM));
-//		Session session = null;
-//		try {
-//			session = getSession(request, metadata);
-//			Channel channel = session.openChannel(SFTP_CHANNEL_TYPE);
-//			channel.connect();
-//			ChannelSftp sftpChannel = (ChannelSftp) channel;
-//			sftpChannel.get(metadata.getSourcePath(), stream);
-//			sftpChannel.exit();
-//		} catch (Exception e) {
-//			fillResponseWithFailure(response, e);
-//		} finally {
-//			if (session != null)
-//				session.disconnect();
-//		}
+	protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException {
+		respondWithHtml(response, GET_RESPONSE, HttpServletResponse.SC_OK);
+	}
+	
+	public void respondWithHtml(HttpServletResponse response, String message, int status) throws IOException {
+		response.setStatus(HttpServletResponse.SC_OK);
+		response.setContentType("text/html");
+		response.setCharacterEncoding("UTF-8");
+		String html = String.format(HTML_RESPONSE, message);
+		byte[] outBytes = html.getBytes("UTF-8");
+		response.getOutputStream().write(outBytes);
 	}
 	
 	@Override
@@ -77,7 +73,7 @@ public class SftpProxyServlet extends HttpServlet {
 			
 			String username = null;
 			String password = null;
-			
+			boolean uploading = false;
 			while (iter.hasNext()) {
 				FileItemStream item = iter.next();
 				if (item.isFormField()) {
@@ -88,13 +84,19 @@ public class SftpProxyServlet extends HttpServlet {
 						password = fieldValue;
 					}
 				} else {
+					uploading = true;
 					//the file
-					if (username == null || password == null) {
-						throw new IllegalArgumentException("Authorization is required to establish the SFTP connection.");
-					}
-					
 					Session session = getSession(username, password, metadata);
 					sftpUploadFile(session, metadata, response, item);
+				}
+			}
+			if (!uploading) {
+				try {
+					//download!
+					Session session = getSession(username, password, metadata);
+					sftpDownloadFile(session, metadata, response);
+				} catch (Exception e) {
+					respondWithHtml(response,e.getMessage(), HttpServletResponse.SC_BAD_REQUEST);
 				}
 			}
 		} catch (Exception e) {
@@ -115,6 +117,20 @@ public class SftpProxyServlet extends HttpServlet {
 		}
 	}
 	
+	public void sftpDownloadFile(Session session, SFTPFileMetadata metadata, HttpServletResponse response) throws IOException, JSchException, SftpException {
+		ServletOutputStream stream = response.getOutputStream();
+		try {
+			Channel channel = session.openChannel(SFTP_CHANNEL_TYPE);
+			channel.connect();
+			ChannelSftp sftpChannel = (ChannelSftp) channel;
+			sftpChannel.get(metadata.getDecodedSourcePath(), stream);
+			sftpChannel.exit();
+		} finally {
+			if (session != null)
+				session.disconnect();
+		}
+	}
+	
 	public void sftpUploadFile(Session session, SFTPFileMetadata metadata, HttpServletResponse response, FileItemStream item) throws FileUploadException, IOException, ServletException {
 		String name = item.getFieldName();
 		InputStream stream = item.openStream();
@@ -132,7 +148,7 @@ public class SftpProxyServlet extends HttpServlet {
 			sftpChannel.put(stream, fileName);
 			sftpChannel.exit();
 			
-			fillResponseWithSuccess(response, metadata.getFullUrl() + "/" + fileName);
+			fillResponseWithSuccess(response, metadata.getFullEncodedUrl() + "/" + URLEncoder.encode(fileName, "UTF-8"));
 		} catch (SecurityException e) {
 			throw e;
 		} catch (Exception e) {
@@ -158,6 +174,10 @@ public class SftpProxyServlet extends HttpServlet {
 	}
 	
 	public Session getSession(String username, String password, SFTPFileMetadata metadata) throws SecurityException {
+		if (username == null || password == null) {
+			throw new IllegalArgumentException("Authorization is required to establish the SFTP connection.");
+		}
+
 		Session session;
 		try {
 			session = jsch.getSession(username, metadata.getHost(), metadata.getPort());
@@ -220,6 +240,14 @@ public class SftpProxyServlet extends HttpServlet {
 			"			window.parent.postMessage('%s', '*');\n" + 
 			"		}\n" + 
 			"	</script>\n" + 
+			"  </body>\n" + 
+			"</html>";
+	
+	public static final String GET_RESPONSE = "<h1>The Synapse SFTP proxy is running</h1>";
+	public static final String HTML_RESPONSE =
+			"<html>\n" + 
+			"  <body>\n" +
+			"	%s\n"+
 			"  </body>\n" + 
 			"</html>";
 }

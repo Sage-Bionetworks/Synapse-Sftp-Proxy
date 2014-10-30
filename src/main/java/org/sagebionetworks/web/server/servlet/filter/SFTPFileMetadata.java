@@ -1,5 +1,8 @@
 package org.sagebionetworks.web.server.servlet.filter;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -22,18 +25,28 @@ public class SFTPFileMetadata {
 		this.port = port;
 	}
 	
-	public String getFullUrl() {
-		return SFTP_PREFIX + host + ":" + port + getSourcePath();
+	public String getFullEncodedUrl() throws UnsupportedEncodingException {
+		return SFTP_PREFIX + host + ":" + port + getEncodedSourcePath();
 	}
 	
-	public String getSourcePath() {
+	public String getDecodedSourcePath() throws UnsupportedEncodingException {
 		StringBuilder src = new StringBuilder();
 		for (String pathElement : path) {
 			src.append("/");
-			src.append(pathElement);
+			src.append(URLDecoder.decode(pathElement, "UTF-8"));
 		}
 		return src.toString();
 	}
+	
+	public String getEncodedSourcePath() throws UnsupportedEncodingException {
+		StringBuilder src = new StringBuilder();
+		for (String pathElement : path) {
+			src.append("/");
+			src.append(URLEncoder.encode(pathElement, "UTF-8"));
+		}
+		return src.toString();
+	}
+
 
 	public static SFTPFileMetadata parseUrl(String url) {
 		int port = DEFAULT_PORT;
