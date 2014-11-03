@@ -239,13 +239,18 @@ public class SftpProxyServlet extends HttpServlet {
 		return String.format(RESPONSE_HTML, uploadResultJson);
 	}
 	
-	public static final String RESPONSE_HTML = "<html>\n" + 
-			"  <body onload=\"javascript:sendMessage()\">\n" + 
-			"	<script>\n" + 
-			"		function sendMessage() {\n" + 
-			"			window.parent.postMessage('%s', '*');\n" + 
-			"		}\n" + 
-			"	</script>\n" + 
+	public static final String RESPONSE_HTML = "<!doctype html>\n" + 
+			"<html>\n" + 
+			"  <head>\n" + 
+			"    <title>posting response message back to parent</title>\n" + 
+			"    <script>\n" + 
+			"      function load() {\n" + 
+			"        window.parent.postMessage('%s', '*');\n" + 
+			"      }\n" + 
+			"      window.onload = load;\n" + 
+			"    </script>\n" + 
+			"  </head>\n" + 
+			"  <body>\n" + 
 			"  </body>\n" + 
 			"</html>";
 	
