@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -120,6 +121,11 @@ public class SftpProxyServlet extends HttpServlet {
 	public void sftpDownloadFile(Session session, SFTPFileMetadata metadata, HttpServletResponse response) throws IOException, JSchException, SftpException {
 		ServletOutputStream stream = response.getOutputStream();
 		try {
+			response.setContentType("application/octet-stream");
+			List<String> path = metadata.getPath();
+			String fileName = path.get(path.size()-1);
+			response.setHeader("Content-disposition","attachment; filename=\""+fileName+"\"");
+
 			Channel channel = session.openChannel(SFTP_CHANNEL_TYPE);
 			channel.connect();
 			ChannelSftp sftpChannel = (ChannelSftp) channel;
