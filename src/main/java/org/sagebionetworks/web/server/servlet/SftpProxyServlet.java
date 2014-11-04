@@ -226,7 +226,7 @@ public class SftpProxyServlet extends HttpServlet {
 		result.setUploadStatus(UploadStatus.FAILED);
 		try {
 			String uploadResultJson = EntityFactory.createJSONStringForEntity(result);
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			//status code OK, content contains the error
 			response.setContentType("text/html");
 			response.setCharacterEncoding("UTF-8");
 			String out = getPostMessageResponsePage(uploadResultJson);
