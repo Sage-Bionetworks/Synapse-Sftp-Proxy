@@ -3,6 +3,7 @@ package org.sagebionetworks.web.server.servlet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.List;
 
@@ -123,7 +124,8 @@ public class SftpProxyServlet extends HttpServlet {
 		try {
 			response.setContentType("application/octet-stream");
 			List<String> path = metadata.getPath();
-			String fileName = path.get(path.size()-1);
+			String fileName = URLDecoder.decode(path.get(path.size()-1), "UTF-8");
+			
 			response.setHeader("Content-disposition","attachment; filename=\""+fileName+"\"");
 
 			Channel channel = session.openChannel(SFTP_CHANNEL_TYPE);
