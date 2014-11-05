@@ -2,6 +2,7 @@ package org.sagebionetworks.web.server.servlet;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -65,12 +66,9 @@ public class SftpProxyServlet extends HttpServlet {
 		response.getOutputStream().write(outBytes);
 	}
 	
-	@Override
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		SFTPFileMetadata metadata = SFTPFileMetadata.parseUrl(request.getParameter(SFTP_URL_PARAM));
+	public void doPost(HttpServletRequest request, HttpServletResponse response, SFTPFileMetadata metadata, ServletFileUpload upload) throws ServletException, IOException {
 		try {
 			//gather input values from the request
-			ServletFileUpload upload = new ServletFileUpload();
 			FileItemIterator iter = upload.getItemIterator(request);
 			
 			String username = null;
@@ -89,14 +87,23 @@ public class SftpProxyServlet extends HttpServlet {
 					uploading = true;
 					//the file
 					Session session = getSession(username, password, metadata);
-					sftpUploadFile(session, metadata, response, item);
+					InputStream stream = item.openStream();
+					String fileName = item.getName();
+					String url = sftpUploadFile(session, metadata, fileName, stream);
+					fillResponseWithSuccess(response, url);
 				}
 			}
 			if (!uploading) {
 				try {
 					//download!
 					Session session = getSession(username, password, metadata);
-					sftpDownloadFile(session, metadata, response);
+					response.setContentType("application/octet-stream");
+					List<String> path = metadata.getPath();
+					String fileName = URLDecoder.decode(path.get(path.size()-1), "UTF-8");
+					response.setHeader("Content-disposition","attachment; filename=\""+fileName+"\"");
+					
+					ServletOutputStream stream = response.getOutputStream();
+					sftpDownloadFile(session, metadata, stream);
 				} catch (Exception e) {
 					respondWithHtml(response,e.getMessage(), HttpServletResponse.SC_BAD_REQUEST);
 				}
@@ -104,6 +111,13 @@ public class SftpProxyServlet extends HttpServlet {
 		} catch (Exception e) {
 			fillResponseWithFailure(response, e);
 		}
+	}
+	
+	@Override
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		ServletFileUpload upload = new ServletFileUpload();
+		SFTPFileMetadata metadata = SFTPFileMetadata.parseUrl(request.getParameter(SFTP_URL_PARAM));
+		doPost(request, response, metadata, upload);
 	}
 	
 	public String getStringItem(FileItemStream item) throws IOException {
@@ -119,19 +133,13 @@ public class SftpProxyServlet extends HttpServlet {
 		}
 	}
 	
-	public void sftpDownloadFile(Session session, SFTPFileMetadata metadata, HttpServletResponse response) throws IOException, JSchException, SftpException {
-		ServletOutputStream stream = response.getOutputStream();
+	public void sftpDownloadFile(Session session, SFTPFileMetadata metadata, OutputStream stream) throws IOException, JSchException, SftpException {
 		try {
-			response.setContentType("application/octet-stream");
-			List<String> path = metadata.getPath();
-			String fileName = URLDecoder.decode(path.get(path.size()-1), "UTF-8");
-			
-			response.setHeader("Content-disposition","attachment; filename=\""+fileName+"\"");
-
 			Channel channel = session.openChannel(SFTP_CHANNEL_TYPE);
 			channel.connect();
 			ChannelSftp sftpChannel = (ChannelSftp) channel;
-			sftpChannel.get(metadata.getDecodedSourcePath(), stream);
+			String decodedSourcePath = metadata.getDecodedSourcePath();
+			sftpChannel.get(decodedSourcePath, stream);
 			sftpChannel.exit();
 		} finally {
 			if (session != null)
@@ -139,11 +147,7 @@ public class SftpProxyServlet extends HttpServlet {
 		}
 	}
 	
-	public void sftpUploadFile(Session session, SFTPFileMetadata metadata, HttpServletResponse response, FileItemStream item) throws FileUploadException, IOException, ServletException {
-		String name = item.getFieldName();
-		InputStream stream = item.openStream();
-		
-		String fileName = item.getName();
+	public String sftpUploadFile(Session session, SFTPFileMetadata metadata, String fileName, InputStream stream) throws FileUploadException, IOException, ServletException, JSchException, SftpException {
 		if (fileName.contains("\\")) {
 			fileName = fileName.substring(fileName.lastIndexOf("\\") + 1);
 		}
@@ -155,13 +159,9 @@ public class SftpProxyServlet extends HttpServlet {
 			changeToRemoteUploadDirectory(metadata, sftpChannel);
 			sftpChannel.put(stream, fileName);
 			sftpChannel.exit();
-			
-			fillResponseWithSuccess(response, metadata.getFullEncodedUrl() + "/" + URLEncoder.encode(fileName, "UTF-8"));
+			return metadata.getFullEncodedUrl() + "/" + URLEncoder.encode(fileName, "UTF-8");
 		} catch (SecurityException e) {
 			throw e;
-		} catch (Exception e) {
-			fillResponseWithFailure(response, e);
-			return;
 		} finally {
 			if (session != null)
 				session.disconnect();
