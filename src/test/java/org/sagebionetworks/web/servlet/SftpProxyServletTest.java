@@ -12,7 +12,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -21,7 +20,6 @@ import java.util.Date;
 import java.util.List;
 
 import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -190,35 +188,4 @@ public class SftpProxyServletTest {
 		userNameStream.close();
 		passwordStream.close();
 	}
-	
-	private class ByteArrayServletOutputStream extends ServletOutputStream {
-		private ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		
-		@Override
-		public void write(byte[] byteArray) throws IOException {
-			baos.write(byteArray);
-		}
-		
-		public String asString() throws UnsupportedEncodingException {
-			return baos.toString("UTF-8");
-		}
-		
-		@Override
-		public void flush() throws IOException {
-			baos.flush();
-		}
-		
-		@Override
-		public void close() throws IOException {
-			baos.close();
-		}
-		
-		@Override
-		public void write(int b) throws IOException {
-			baos.write(b);
-		}
-		
-	}
-	
-	
 }
