@@ -164,7 +164,7 @@ public class SftpProxyServletTest {
 		//get the response
 		String responseString = baos.asString();
 		//parse out the response url
-		assertTrue(responseString != null && responseString.contains("SUCCESS"));
+		assertTrue("ERROR - unexpected response string: " + responseString, responseString != null && responseString.contains("SUCCESS"));
 		
 		//****DOWNLOAD*****
 		//no file item, but still return the credentials
