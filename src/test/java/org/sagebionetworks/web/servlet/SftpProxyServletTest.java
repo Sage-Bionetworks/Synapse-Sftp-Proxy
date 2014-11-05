@@ -114,7 +114,7 @@ public class SftpProxyServletTest {
 		String path= System.getProperty("sftp-test-path");
 		String username= System.getProperty("sftp-test-user");
 		String password= System.getProperty("sftp-test-password");
-		if (endpoint == null || username == null || password == null) {
+		if (endpoint == null || username == null || password == null || path == null) {
 			System.out.println("Skipped round trip sftp test due to missing connection properties (sftp-test-host, sftp-test-path, sftp-test-user, and sftp-test-password)");
 			return;
 		}
