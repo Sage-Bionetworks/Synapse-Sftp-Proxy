@@ -65,8 +65,11 @@ public class SFTPFileMetadataTest {
 		// no subdirectory
 		SFTPFileMetadata metadata = SFTPFileMetadata.parseUrl(url);
 		
+		//encoded value should contain %20 for space, not +
+		String encodedUrl = metadata.getFullEncodedUrl();
+		assertTrue(encodedUrl.contains("%20") && !encodedUrl.contains("+"));
 		//not equal, but this encoded value is what is saved to the external file entity url
-		assertTrue(!url.equals(metadata.getFullEncodedUrl()));
+		assertTrue(!url.equals(encodedUrl));
 		
 		//on download of the sftp file, we need to decode
 		SFTPFileMetadata encodedMetadata = SFTPFileMetadata.parseUrl(metadata.getFullEncodedUrl());
@@ -74,32 +77,32 @@ public class SFTPFileMetadataTest {
 	}
 	
 	@Test(expected = IllegalArgumentException.class)
-	public void testNullUrl() {
+	public void testNullUrl() throws UnsupportedEncodingException {
 		SFTPFileMetadata.parseUrl(null);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testEmptyUrl() {
+	public void testEmptyUrl() throws UnsupportedEncodingException {
 		SFTPFileMetadata.parseUrl("");
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testMissingTokenUrl() {
+	public void testMissingTokenUrl() throws UnsupportedEncodingException {
 		SFTPFileMetadata.parseUrl("sftp://basefile.txt");
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testMissingPrefixUrl() {
+	public void testMissingPrefixUrl() throws UnsupportedEncodingException {
 		SFTPFileMetadata.parseUrl("http://xkcd.com/basefile");
 	}
 	
 	@Test(expected = IllegalArgumentException.class)
-	public void testBadPort() {
+	public void testBadPort() throws UnsupportedEncodingException {
 		SFTPFileMetadata.parseUrl("sftp://test:invalidport/basefile.txt");
 	}
 	
 	@Test(expected = IllegalArgumentException.class)
-	public void testBadPort2() {
+	public void testBadPort2() throws UnsupportedEncodingException {
 		SFTPFileMetadata.parseUrl("sftp://test:12:34/basefile.txt");
 	}
 	

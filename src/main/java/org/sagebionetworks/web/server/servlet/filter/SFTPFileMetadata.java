@@ -42,13 +42,13 @@ public class SFTPFileMetadata {
 		StringBuilder src = new StringBuilder();
 		for (String pathElement : path) {
 			src.append("/");
-			src.append(URLEncoder.encode(pathElement, "UTF-8"));
+			src.append(URLEncoder.encode(pathElement, "UTF-8").replace("+", "%20"));
 		}
 		return src.toString();
 	}
 
 
-	public static SFTPFileMetadata parseUrl(String url) {
+	public static SFTPFileMetadata parseUrl(String url) throws UnsupportedEncodingException {
 		int port = DEFAULT_PORT;
 		if (url == null || url.trim().length() == 0) {
 			throw new IllegalArgumentException("url must be defined");
@@ -80,7 +80,8 @@ public class SFTPFileMetadata {
 		while(tokenizer.hasMoreTokens()) {
 			//now start adding tokens to the path, until we reach the final token (which is the filename)
 			String currentToken = tokenizer.nextToken();
-			path.add(currentToken);
+			//because we are passing this url in a query param, we need to decode this to get to the true path value
+			path.add(URLDecoder.decode(currentToken, "UTF-8"));
 		}
 		
 		return new SFTPFileMetadata(host, path, port);
