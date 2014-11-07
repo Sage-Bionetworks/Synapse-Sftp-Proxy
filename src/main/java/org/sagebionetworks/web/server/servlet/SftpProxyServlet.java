@@ -159,7 +159,8 @@ public class SftpProxyServlet extends HttpServlet {
 			changeToRemoteUploadDirectory(metadata, sftpChannel);
 			sftpChannel.put(stream, fileName);
 			sftpChannel.exit();
-			return metadata.getFullEncodedUrl() + "/" + URLEncoder.encode(fileName, "UTF-8");
+			//http://stackoverflow.com/questions/4737841/urlencoder-not-able-to-translate-space-character
+			return metadata.getFullEncodedUrl() + "/" + URLEncoder.encode(fileName, "UTF-8").replace("+", "%20");
 		} catch (SecurityException e) {
 			throw e;
 		} finally {
