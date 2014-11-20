@@ -12,5 +12,3 @@ for f in `find . -name "pom.xml"` ; do
      #We are using sed to replaces all 'develop-SNAPSHOT' verions with the new
      sed "s|<version>develop-SNAPSHOT</version>|<version>${newVersion}</version>|g" -i $f
 done
-
-
