@@ -54,10 +54,10 @@ public class SftpProxyServlet extends HttpServlet {
 	
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException {
-		respondWithHtml(response, GET_RESPONSE, HttpServletResponse.SC_OK);
+		respondWithHtml(response, GET_RESPONSE);
 	}
 	
-	public void respondWithHtml(HttpServletResponse response, String message, int status) throws IOException {
+	public void respondWithHtml(HttpServletResponse response, String message) throws IOException {
 		response.setStatus(HttpServletResponse.SC_OK);
 		response.setContentType("text/html");
 		response.setCharacterEncoding("UTF-8");
@@ -104,8 +104,10 @@ public class SftpProxyServlet extends HttpServlet {
 					
 					ServletOutputStream stream = response.getOutputStream();
 					sftpDownloadFile(session, metadata, stream);
+				} catch (SecurityException se) {
+					response.sendError(HttpServletResponse.SC_FORBIDDEN, "The user name or password is incorrect.\n\nUnable to download the file:\n" + metadata.getFullEncodedUrl());
 				} catch (Exception e) {
-					respondWithHtml(response,e.getMessage(), HttpServletResponse.SC_BAD_REQUEST);
+					response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unable to download the file:\n" + metadata.getFullEncodedUrl() + "\n" + e.getMessage());
 				}
 			}
 		} catch (Exception e) {
