@@ -172,7 +172,9 @@ public class SftpProxyServlet extends HttpServlet {
 	}
 	
 	public void changeToRemoteUploadDirectory(SFTPFileMetadata metadata, ChannelSftp sftpChannel) throws SftpException {
-		//change directory (and make directory if not exist)
+		//change directory to root before trying to cd
+		sftpChannel.cd("/");
+		//do not change directories if we are already 
 		for (String directory : metadata.getPath()) {
 			try{
 				sftpChannel.cd(directory);
