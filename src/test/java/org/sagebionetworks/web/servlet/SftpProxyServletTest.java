@@ -5,7 +5,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -31,6 +30,7 @@ import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.sagebionetworks.web.server.servlet.SftpProxyServlet;
 import org.sagebionetworks.web.server.servlet.filter.SFTPFileMetadata;
 
@@ -50,7 +50,7 @@ public class SftpProxyServletTest {
 	ChannelSftp mockChannel;
 	
 	@Before
-	public void setUp() throws UnsupportedEncodingException, JSchException {
+	public void setUp() throws UnsupportedEncodingException, JSchException, SftpException {
 		mockJsch = mock(JSch.class);
 		mockSession = mock(Session.class);
 		when(mockJsch.getSession(anyString(), anyString(), anyInt())).thenReturn(mockSession);
@@ -77,10 +77,11 @@ public class SftpProxyServletTest {
 		
 		//and verify the values
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-		verify(mockChannel, times(2)).cd(captor.capture());
+		verify(mockChannel, times(3)).cd(captor.capture());
 		List<String> values = captor.getAllValues();
-		assertEquals(dir1, values.get(0));
-		assertEquals(dir2, values.get(1));
+		assertEquals("/", values.get(0));
+		assertEquals(dir1, values.get(1));
+		assertEquals(dir2, values.get(2));
 	}
 	
 	@Test
@@ -90,7 +91,7 @@ public class SftpProxyServletTest {
 		path.add(dir1);
 		SFTPFileMetadata metadata = new SFTPFileMetadata("sagebase.org", path);
 		//initially throw an exception, then do nothing (do not throw an exception on the "cd" command)
-		doThrow(new SftpException(1, "fake exception when changing directory")).doNothing().when(mockChannel).cd(anyString());
+		Mockito.doNothing().doThrow(new SftpException(1, "fake exception when changing directory")).doNothing().when(mockChannel).cd(anyString());
 		servlet.changeToRemoteUploadDirectory(metadata, mockChannel);
 		
 		verify(mockChannel).mkdir(dir1);
@@ -103,7 +104,7 @@ public class SftpProxyServletTest {
 		SFTPFileMetadata metadata = new SFTPFileMetadata("sagebase.org", path);
 		servlet.changeToRemoteUploadDirectory(metadata, mockChannel);
 		
-		verify(mockChannel, never()).cd(anyString());
+		verify(mockChannel, times(1)).cd(anyString()); //only change to root
 		verify(mockChannel, never()).mkdir(anyString());
 	}
 	
