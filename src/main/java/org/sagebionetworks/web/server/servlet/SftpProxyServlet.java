@@ -66,60 +66,61 @@ public class SftpProxyServlet extends HttpServlet {
 		response.getOutputStream().write(outBytes);
 	}
 	
-	public void doPost(HttpServletRequest request, HttpServletResponse response, SFTPFileMetadata metadata, ServletFileUpload upload) throws ServletException, IOException {
-		try {
-			//gather input values from the request
-			FileItemIterator iter = upload.getItemIterator(request);
-			
-			String username = null;
-			String password = null;
-			boolean uploading = false;
-			while (iter.hasNext()) {
-				FileItemStream item = iter.next();
-				if (item.isFormField()) {
-					String fieldValue = getStringItem(item);
-					if (item.getFieldName().equals("username")) {
-						username = fieldValue;
-					} else if (item.getFieldName().equals("password")) {
-						password = fieldValue;
-					}
-				} else {
-					uploading = true;
-					//the file
-					Session session = getSession(username, password, metadata);
-					InputStream stream = item.openStream();
-					String fileName = item.getName();
-					String url = sftpUploadFile(session, metadata, fileName, stream);
-					fillResponseWithSuccess(response, url);
+	public void doPost(HttpServletRequest request, HttpServletResponse response, SFTPFileMetadata metadata, ServletFileUpload upload) throws ServletException, IOException, FileUploadException, JSchException, SftpException, JSONObjectAdapterException {
+		//gather input values from the request
+		FileItemIterator iter = upload.getItemIterator(request);
+		
+		String username = null;
+		String password = null;
+		boolean uploading = false;
+		while (iter.hasNext()) {
+			FileItemStream item = iter.next();
+			if (item.isFormField()) {
+				String fieldValue = getStringItem(item);
+				if (item.getFieldName().equals("username")) {
+					username = fieldValue;
+				} else if (item.getFieldName().equals("password")) {
+					password = fieldValue;
 				}
+			} else {
+				uploading = true;
+				//the file
+				Session session = getSession(username, password, metadata);
+				InputStream stream = item.openStream();
+				String fileName = item.getName();
+				String url = sftpUploadFile(session, metadata, fileName, stream);
+				fillResponseWithSuccess(response, url);
 			}
-			if (!uploading) {
-				try {
-					//download!
-					Session session = getSession(username, password, metadata);
-					response.setContentType("application/octet-stream");
-					List<String> path = metadata.getPath();
-					String fileName = URLDecoder.decode(path.get(path.size()-1), "UTF-8");
-					response.setHeader("Content-disposition","attachment; filename=\""+fileName+"\"");
-					
-					ServletOutputStream stream = response.getOutputStream();
-					sftpDownloadFile(session, metadata, stream);
-				} catch (SecurityException se) {
-					response.sendError(HttpServletResponse.SC_FORBIDDEN, "The user name or password is incorrect.\n\nUnable to download the file:\n" + metadata.getFullEncodedUrl());
-				} catch (Exception e) {
-					response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unable to download the file:\n" + metadata.getFullEncodedUrl() + "\n" + e.getMessage());
-				}
-			}
-		} catch (Exception e) {
-			fillResponseWithFailure(response, e);
 		}
+		if (!uploading) {
+			try {
+				//download!
+				Session session = getSession(username, password, metadata);
+				response.setContentType("application/octet-stream");
+				List<String> path = metadata.getPath();
+				String fileName = URLDecoder.decode(path.get(path.size()-1), "UTF-8");
+				response.setHeader("Content-disposition","attachment; filename=\""+fileName+"\"");
+				
+				ServletOutputStream stream = response.getOutputStream();
+				sftpDownloadFile(session, metadata, stream);
+			} catch (SecurityException se) {
+				response.sendError(HttpServletResponse.SC_FORBIDDEN, "The user name or password is incorrect.\n\nUnable to download the file:\n" + metadata.getFullEncodedUrl());
+			} catch (Exception e) {
+				response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unable to download the file:\n" + metadata.getFullEncodedUrl() + "\n" + e.getMessage());
+			}
+		}
+	
 	}
 	
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		ServletFileUpload upload = new ServletFileUpload();
-		SFTPFileMetadata metadata = SFTPFileMetadata.parseUrl(request.getParameter(SFTP_URL_PARAM));
-		doPost(request, response, metadata, upload);
+		try{
+			ServletFileUpload upload = new ServletFileUpload();
+			SFTPFileMetadata metadata = SFTPFileMetadata.parseUrl(request.getParameter(SFTP_URL_PARAM));
+			doPost(request, response, metadata, upload);
+		} catch (Exception e) {
+			fillResponseWithFailure(response, e);
+		}
 	}
 	
 	public String getStringItem(FileItemStream item) throws IOException {

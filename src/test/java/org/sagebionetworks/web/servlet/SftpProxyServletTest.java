@@ -31,6 +31,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.sagebionetworks.schema.adapter.JSONObjectAdapterException;
 import org.sagebionetworks.web.server.servlet.SftpProxyServlet;
 import org.sagebionetworks.web.server.servlet.filter.SFTPFileMetadata;
 
@@ -109,7 +110,7 @@ public class SftpProxyServletTest {
 	}
 	
 	@Test
-	public void testRoundTrip() throws ServletException, IOException, FileUploadException {
+	public void testRoundTrip() throws ServletException, IOException, FileUploadException, JSchException, SftpException, JSONObjectAdapterException {
 		//only run this test if a sftp test server was set on the command line (with credentials)
 		String endpoint = System.getProperty("sftp-test-host");
 		String path= System.getProperty("sftp-test-path");
