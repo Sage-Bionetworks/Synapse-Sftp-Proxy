@@ -104,13 +104,29 @@ public class SftpProxyServlet extends HttpServlet {
 				ServletOutputStream stream = response.getOutputStream();
 				sftpDownloadFile(session, metadata, stream);
 			} catch (SecurityException se) {
-				fillResponseWithFailure(response, se);
+				fillResponseWithUploadResultFailure(response, se);
 			} catch (Exception e) {
-				fillResponseWithFailure(response, e);
+				fillResponseWithUploadResultFailure(response, e);
 			}
 		}
 	
 	}
+	
+	public static void fillResponseWithUploadResultFailure(HttpServletResponse response, Exception e) throws UnsupportedEncodingException, IOException {
+		UploadResult result = new UploadResult();
+		result.setMessage(e.getMessage());
+		result.setUploadStatus(UploadStatus.FAILED);
+		String out;
+		try {
+			out = EntityFactory.createJSONStringForEntity(result);
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.getOutputStream().write(out.getBytes("UTF-8"));
+			response.getOutputStream().flush();
+		} catch (JSONObjectAdapterException e1) {
+			throw new RuntimeException(e1);
+		}
+	}
+	
 	
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
