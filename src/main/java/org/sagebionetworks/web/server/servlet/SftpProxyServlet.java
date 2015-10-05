@@ -104,9 +104,9 @@ public class SftpProxyServlet extends HttpServlet {
 				ServletOutputStream stream = response.getOutputStream();
 				sftpDownloadFile(session, metadata, stream);
 			} catch (SecurityException se) {
-				response.sendError(HttpServletResponse.SC_FORBIDDEN, "The user name or password is incorrect.\n\nUnable to download the file:\n" + metadata.getFullEncodedUrl());
+				fillResponseWithFailure(response, se);
 			} catch (Exception e) {
-				response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unable to download the file:\n" + metadata.getFullEncodedUrl() + "\n" + e.getMessage());
+				fillResponseWithFailure(response, e);
 			}
 		}
 	
