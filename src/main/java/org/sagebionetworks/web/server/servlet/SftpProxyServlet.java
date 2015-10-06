@@ -36,6 +36,7 @@ import com.jcraft.jsch.SftpException;
 public class SftpProxyServlet extends HttpServlet {
 	public static final String SFTP_CHANNEL_TYPE = "sftp";
 	public static final String SFTP_URL_PARAM = "url";
+	public static final String SFTP_FILENAME_OVERRIDE_PARAM = "filename";
 	private static final long serialVersionUID = 1L;
 	
 	private JSch jsch = new JSch();
@@ -97,12 +98,12 @@ public class SftpProxyServlet extends HttpServlet {
 				//download!
 				Session session = getSession(username, password, metadata);
 				response.setContentType("application/octet-stream");
-				List<String> path = metadata.getPath();
-				String fileName = URLDecoder.decode(path.get(path.size()-1), "UTF-8");
+				String fileName = URLDecoder.decode(metadata.getFilenameOverride(), "UTF-8");
 				response.setHeader("Content-disposition","attachment; filename=\""+fileName+"\"");
 				
 				ServletOutputStream stream = response.getOutputStream();
 				sftpDownloadFile(session, metadata, stream);
+				fillResponseWithSuccess(response, fileName);
 			} catch (SecurityException se) {
 				fillResponseWithFailure(response, se);
 			} catch (Exception e) {
@@ -117,6 +118,7 @@ public class SftpProxyServlet extends HttpServlet {
 		try{
 			ServletFileUpload upload = new ServletFileUpload();
 			SFTPFileMetadata metadata = SFTPFileMetadata.parseUrl(request.getParameter(SFTP_URL_PARAM));
+			metadata.setFilenameOverride(request.getParameter(SFTP_FILENAME_OVERRIDE_PARAM));
 			doPost(request, response, metadata, upload);
 		} catch (Exception e) {
 			fillResponseWithFailure(response, e);

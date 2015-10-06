@@ -13,6 +13,7 @@ public class SFTPFileMetadata {
 	private List<String> path;
 	public static final String SFTP_PREFIX = "sftp://";
 	private int port;
+	private String filenameOverride;
 	
 	public SFTPFileMetadata(String host, List<String> path) {
 		this(host, path, DEFAULT_PORT);
@@ -86,7 +87,12 @@ public class SFTPFileMetadata {
 		
 		return new SFTPFileMetadata(host, path, port);
 	}
-	
+	public String getFilenameOverride() {
+		return filenameOverride;
+	}
+	public void setFilenameOverride(String filenameOverride) {
+		this.filenameOverride = filenameOverride;
+	}
 	public String getHost() {
 		return host;
 	}
