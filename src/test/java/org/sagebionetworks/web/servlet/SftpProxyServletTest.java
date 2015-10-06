@@ -3,7 +3,7 @@ package org.sagebionetworks.web.servlet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.*;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -183,10 +183,13 @@ public class SftpProxyServletTest {
 		when(passwordItem.openStream()).thenReturn(passwordStream);
 		
 		pathList.add(swcTestFileName);
+		String filenameOverride = "overridden.txt";
+		metadata.setFilenameOverride(filenameOverride);
 		servlet.doPost(mockRequest, mockResponse, metadata, mockUpload);
 		baos.flush();
 		responseString = baos.asString();
 		assertEquals(fileContents, responseString);
+		verify(mockResponse).setHeader(eq("Content-disposition"), contains(filenameOverride));
 		userNameStream.close();
 		passwordStream.close();
 	}
