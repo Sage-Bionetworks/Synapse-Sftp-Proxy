@@ -103,7 +103,6 @@ public class SftpProxyServlet extends HttpServlet {
 				
 				ServletOutputStream stream = response.getOutputStream();
 				sftpDownloadFile(session, metadata, stream);
-				fillResponseWithSuccess(response, fileName);
 			} catch (SecurityException se) {
 				fillResponseWithFailure(response, se);
 			} catch (Exception e) {
