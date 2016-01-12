@@ -14,7 +14,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.codec.binary.Base64;
 import org.sagebionetworks.web.server.servlet.SftpProxyServlet;
-import org.springframework.http.HttpStatus;
 
 public class BasicAuthFilter implements Filter {
 
@@ -44,7 +43,7 @@ public class BasicAuthFilter implements Filter {
 		// challenge
 		//http://docs.oracle.com/cd/E21455_01/common/tutorials/authn_http_basic.html
 		//respond with a 401 asking for basic http authentication
-		response.setStatus(HttpStatus.UNAUTHORIZED.value());
+		response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 		response.setHeader("WWW-Authenticate", HttpServletRequest.BASIC_AUTH + " realm=\"You must sign in to access "+host+ "\"");
 
 	}

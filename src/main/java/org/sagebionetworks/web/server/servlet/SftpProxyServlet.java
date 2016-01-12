@@ -16,10 +16,7 @@ import org.apache.commons.fileupload.FileItemIterator;
 import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.sagebionetworks.repo.model.attachment.UploadResult;
-import org.sagebionetworks.repo.model.attachment.UploadStatus;
-import org.sagebionetworks.schema.adapter.JSONObjectAdapterException;
-import org.sagebionetworks.schema.adapter.org.json.EntityFactory;
+import org.json.JSONObject;
 import org.sagebionetworks.web.server.servlet.filter.BasicAuthFilter;
 import org.sagebionetworks.web.server.servlet.filter.Credentials;
 import org.sagebionetworks.web.server.servlet.filter.SFTPFileMetadata;
@@ -162,29 +159,23 @@ public class SftpProxyServlet extends HttpServlet {
 	}
 
 	
-	public static void fillResponseWithSuccess(HttpServletResponse response, String url) throws JSONObjectAdapterException, UnsupportedEncodingException, IOException {
-		UploadResult result = new UploadResult();
-		result.setMessage(url);
-		
-		result.setUploadStatus(UploadStatus.SUCCESS);
-		String out = EntityFactory.createJSONStringForEntity(result);
+	public static void fillResponseWithSuccess(HttpServletResponse response, String url) throws UnsupportedEncodingException, IOException {
+		JSONObject result = new JSONObject();
+		result.putOpt("message", url);
+		result.put("uploadStatus", "SUCCESS");
+		String out = result.toString();
 		response.setStatus(HttpServletResponse.SC_CREATED);
 		response.getOutputStream().write(out.getBytes("UTF-8"));
 		response.getOutputStream().flush();
 	}
 	
 	public static void fillResponseWithFailure(HttpServletResponse response, Exception e) throws UnsupportedEncodingException, IOException {
-		UploadResult result = new UploadResult();
-		result.setMessage(e.getMessage());
-		result.setUploadStatus(UploadStatus.FAILED);
-		String out;
-		try {
-			out = EntityFactory.createJSONStringForEntity(result);
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-			response.getOutputStream().write(out.getBytes("UTF-8"));
-			response.getOutputStream().flush();
-		} catch (JSONObjectAdapterException e1) {
-			throw new RuntimeException(e1);
-		}
+		JSONObject result = new JSONObject();
+		result.putOpt("message", e.getMessage());
+		result.put("uploadStatus", "FAILED");
+		String out = result.toString();
+		response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+		response.getOutputStream().write(out.getBytes("UTF-8"));
+		response.getOutputStream().flush();
 	}
 }
