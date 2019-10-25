@@ -10,13 +10,13 @@
 	<name>Synapse SFTP Proxy</name>
 
 	<properties>
-		<maven.compiler.source>1.6</maven.compiler.source>
-		<maven.compiler.target>1.6</maven.compiler.target>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
 		
-		<synapse.version>193.0-2-gaf99893</synapse.version>
+		<synapse.version>284.0</synapse.version>
 		<webappDirectory>${project.build.directory}/${project.build.finalName}</webappDirectory>
 		<gwtVersion>2.5.1</gwtVersion>
-		<org.springframework.version>4.0.2.RELEASE</org.springframework.version>
+		<org.springframework.version>4.3.25.RELEASE</org.springframework.version>
 		<guiceVersion>3.0-rc2</guiceVersion>
 		<log4j.version>2.0-beta8</log4j.version>
 	</properties>
@@ -45,6 +45,10 @@
 		<repository>
 			<id>maven-central-rep-1</id>
 			<url>http://repo1.maven.org/maven2/</url>
+		</repository>
+		<repository>
+			<id>mvnrepository.com</id>
+			<url>https://central.maven.org/maven2/</url>
 		</repository>
 		<repository>
 			<id>sun-maven-repository</id>
@@ -178,7 +182,7 @@
 					<compileReport>true</compileReport>
 					<encoding>${project.build.sourceEncoding}</encoding>
 					<logLevel>INFO</logLevel>
-					<extraJvmArgs>-Xmx1536m -Xms1024m -XX:PermSize=128m -XX:MaxPermSize=256m</extraJvmArgs>
+					<extraJvmArgs>-Xmx1536m -Xms1024m</extraJvmArgs>
 					<!-- <fragmentCount>12</fragmentCount> -->
 				</configuration>
 			</plugin>
@@ -292,7 +296,7 @@
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
-			<version>4.3.2</version>
+			<version>4.3.6</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
@@ -360,12 +364,6 @@
 			<version>0.7</version>
 			<scope>provided</scope>
 		</dependency>
-		<dependency>
-			<groupId>com.google.gwt</groupId>
-			<artifactId>gwt-dev</artifactId>
-			<version>${gwtVersion}</version>
-			<scope>provided</scope>
-		</dependency>
 
 		<dependency>
 			<groupId>com.google.develop</groupId>
@@ -420,7 +418,7 @@
 		<dependency>
 			<groupId>commons-fileupload</groupId>
 			<artifactId>commons-fileupload</artifactId>
-			<version>1.2</version>
+			<version>1.3.3</version>
 		</dependency>
 
 		<dependency>
