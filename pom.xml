@@ -286,7 +286,7 @@
 		<dependency>
 			<groupId>org.quartz-scheduler</groupId>
 			<artifactId>quartz</artifactId>
-			<version>1.8.6</version>
+			<version>2.3.2</version>
 		</dependency>
 		<!-- note: spring-web 4.0.2.RELEASE depends on httpclient 4.3.2 as an optional 
 			dependancy. Since it is marked as optional we must explicitly add it as a 
