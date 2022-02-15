@@ -1,0 +1,161 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Shared resources for Synapse-SFTP-Proxy
+
+Parameters:
+
+  EbAppName:
+    Description: Elastic Beanstalk Synapse-SFTP-Proxy Application Name
+    Type: String
+    Default: 'sftp-proxy'
+  SnsBounceNotificationEndpoint:
+    Type: String
+    Description: Email address for SNS bounce notifications
+  SnsNotificationEndpoint:
+    Type: String
+    Description: Email address for AWS SNS notifications
+
+Resources:
+
+  BeanstalkApplication:
+    Type: 'AWS::ElasticBeanstalk::Application'
+    Properties:
+      ApplicationName: !Ref EbAppName
+      Description: A proxy to provide Synapse access to files hosted on SFTP server
+
+  AppDeployBucket:
+    Type: 'AWS::S3::Bucket'
+
+  LoadBalancerAccessLogsBucket:
+    Type: 'AWS::S3::Bucket'
+
+  LoadBalancerAccessLogsBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref LoadBalancerAccessLogsBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: ModAccess
+            Action:
+              - 's3:PutObject'
+            Effect: Allow
+            Resource:
+              - !Join
+                - ''
+                - - !GetAtt LoadBalancerAccessLogsBucket.Arn
+                  - '/*'
+            Principal:
+              AWS:
+                - 127311923021
+
+  # DeployS3ManagedPolicy:
+  #   Type: "AWS::IAM::ManagedPolicy"
+  #   Properties:
+  #     PolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Sid: ListAccess
+  #           Action:
+  #             - 's3:ListBucket'
+  #             - 's3:GetBucketLocation'
+  #           Effect: Allow
+  #           Resource: !GetAtt AppDeployBucket.Arn
+  #         - Sid: ModAccess
+  #           Action:
+  #             - 's3:PutObject'
+  #             - 's3:PutObjectAcl'
+  #             - 's3:GetObject'
+  #             - 's3:GetObjectAcl'
+  #             - 's3:DeleteObject'
+  #           Effect: Allow
+  #           Resource: !Join
+  #             - ''
+  #             - - !GetAtt AppDeployBucket.Arn
+  #               - '/*'
+
+  BeanstalkServiceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - elasticbeanstalk.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+            Condition:
+              StringEquals:
+                sts:ExternalId: elasticbeanstalk
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkEnhancedHealth'
+        - 'arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkService'
+  
+  # EC2ServiceRole:
+  #   Type: 'AWS::IAM::Role'
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service:
+  #               - ec2.amazonaws.com
+  #           Action:
+  #             - 'sts:AssumeRole'
+  #     Path: /
+  #     ManagedPolicyArns:
+  #       - 'arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier'
+  #       - 'arn:aws:iam::aws:policy/AmazonSNSFullAccess'
+  #       - 'arn:aws:iam::aws:policy/AmazonSESFullAccess'
+  #       - !Ref DeployS3ManagedPolicy
+  
+  # InstanceProfile:
+  #   Type: 'AWS::IAM::InstanceProfile'
+  #   Properties:
+  #     Path: /
+  #     Roles:
+  #     - !Ref EC2ServiceRole
+
+  SNSBounceTopic:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      Subscription:
+        -
+          Endpoint: !Ref SnsBounceNotificationEndpoint
+          Protocol: "email"
+  SNSTopic:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      Subscription:
+        -
+          Endpoint: !Ref SnsNotificationEndpoint
+          Protocol: "email"
+
+Outputs:
+  BeanstalkAppName:
+    Value: !Ref BeanstalkApplication
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-BeanstalkAppName'
+  AppDeployBucket:
+    Value: !Ref AppDeployBucket
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-AppDeployBucketName'
+  LoadBalancerAccessLogsBucket:
+    Value: !Ref LoadBalancerAccessLogsBucket
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-LoadBalancerAccessLogsBucketName'
+  # DeployS3ManagedPolicy:
+  #   Value: !Ref DeployS3ManagedPolicy
+  #   Export:
+  #     Name: !Sub '${AWS::Region}-${AWS::StackName}-S3DeployManagedPolicy'
+  BeanstalkServiceRole:
+    Value: !Ref BeanstalkServiceRole
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-BeanstalkServiceRole'
+  # InstanceProfile:
+  #   Value: !Ref InstanceProfile
+  #   Export:
+  #     Name: !Sub '${AWS::Region}-${AWS::StackName}-InstanceProfile'
