@@ -52,7 +52,7 @@ Resources:
         Fn::ImportValue:
           !Sub 'us-east-1-${ApplicationStackName}-BeanstalkAppName'
       Description: Environment for SFTP Proxy server Beanstalk stack
-      SolutionStackName: '64bit Amazon Linux 2018.03 v3.4.15 running Tomcat 8.5 Java 8'
+      SolutionStackName: '64bit Amazon Linux 2 v4.2.11 running Tomcat 8.5 Corretto 8'
       OptionSettings:
         # EB environment options
         - Namespace: 'aws:ec2:vpc'
@@ -60,7 +60,7 @@ Resources:
           Value: !ImportValue us-east-1-synapse-ops-vpc-v2-VPCId
         - Namespace: 'aws:ec2:vpc'
           OptionName: ELBScheme
-          Value: 'internal'
+          Value: 'public'
         - Namespace: 'aws:ec2:vpc'
           OptionName: AssociatePublicIpAddress
           Value: 'false'
@@ -74,8 +74,8 @@ Resources:
           OptionName: ELBSubnets
           Value: !Join
             - ','
-            - - !ImportValue us-east-1-synapse-ops-vpc-v2-PrivateSubnet
-              - !ImportValue us-east-1-synapse-ops-vpc-v2-PrivateSubnet1
+            - - !ImportValue us-east-1-synapse-ops-vpc-v2-PublicSubnet
+              - !ImportValue us-east-1-synapse-ops-vpc-v2-PublicSubnet1
         - Namespace: 'aws:autoscaling:asg'
           OptionName: MaxSize
           Value: 4
@@ -120,6 +120,17 @@ Resources:
         - Namespace: 'aws:elasticbeanstalk:environment:process:default'
           OptionName: Port
           Value: 443
+        - Namespace: 'aws:elasticbeanstalk:environment'
+          OptionName: ServiceRole
+          Value:
+            Fn::ImportValue:
+              !Sub 'us-east-1-${ApplicationStackName}-BeanstalkServiceRole'
+        - Namespace: 'aws:elasticbeanstalk:environment'
+          OptionName: LoadBalancerType
+          Value: 'application'
+        - Namespace: aws:elasticbeanstalk:environment:proxy
+          OptionName: ProxyServer
+          Value: apache
         - Namespace: 'aws:elasticbeanstalk:cloudwatch:logs'
           OptionName: StreamLogs
           Value: 'true'
@@ -132,14 +143,6 @@ Resources:
         - Namespace: 'aws:elasticbeanstalk:command'
           OptionName: DeploymentPolicy
           Value: AllAtOnce
-        - Namespace: 'aws:elasticbeanstalk:environment'
-          OptionName: ServiceRole
-          Value:
-            Fn::ImportValue:
-              !Sub 'us-east-1-${ApplicationStackName}-BeanstalkServiceRole'
-        - Namespace: 'aws:elasticbeanstalk:environment'
-          OptionName: LoadBalancerType
-          Value: 'application'
         - Namespace: 'aws:elbv2:loadbalancer'
           OptionName: AccessLogsS3Bucket
           Value:
