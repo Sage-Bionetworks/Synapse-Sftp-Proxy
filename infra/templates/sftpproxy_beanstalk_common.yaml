@@ -48,31 +48,6 @@ Resources:
               AWS:
                 - 127311923021
 
-  # DeployS3ManagedPolicy:
-  #   Type: "AWS::IAM::ManagedPolicy"
-  #   Properties:
-  #     PolicyDocument:
-  #       Version: 2012-10-17
-  #       Statement:
-  #         - Sid: ListAccess
-  #           Action:
-  #             - 's3:ListBucket'
-  #             - 's3:GetBucketLocation'
-  #           Effect: Allow
-  #           Resource: !GetAtt AppDeployBucket.Arn
-  #         - Sid: ModAccess
-  #           Action:
-  #             - 's3:PutObject'
-  #             - 's3:PutObjectAcl'
-  #             - 's3:GetObject'
-  #             - 's3:GetObjectAcl'
-  #             - 's3:DeleteObject'
-  #           Effect: Allow
-  #           Resource: !Join
-  #             - ''
-  #             - - !GetAtt AppDeployBucket.Arn
-  #               - '/*'
-
   BeanstalkServiceRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -93,32 +68,6 @@ Resources:
         - 'arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkEnhancedHealth'
         - 'arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkService'
   
-  # EC2ServiceRole:
-  #   Type: 'AWS::IAM::Role'
-  #   Properties:
-  #     AssumeRolePolicyDocument:
-  #       Version: 2012-10-17
-  #       Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             Service:
-  #               - ec2.amazonaws.com
-  #           Action:
-  #             - 'sts:AssumeRole'
-  #     Path: /
-  #     ManagedPolicyArns:
-  #       - 'arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier'
-  #       - 'arn:aws:iam::aws:policy/AmazonSNSFullAccess'
-  #       - 'arn:aws:iam::aws:policy/AmazonSESFullAccess'
-  #       - !Ref DeployS3ManagedPolicy
-  
-  # InstanceProfile:
-  #   Type: 'AWS::IAM::InstanceProfile'
-  #   Properties:
-  #     Path: /
-  #     Roles:
-  #     - !Ref EC2ServiceRole
-
   SNSBounceTopic:
     Type: "AWS::SNS::Topic"
     Properties:
@@ -147,15 +96,7 @@ Outputs:
     Value: !Ref LoadBalancerAccessLogsBucket
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-LoadBalancerAccessLogsBucketName'
-  # DeployS3ManagedPolicy:
-  #   Value: !Ref DeployS3ManagedPolicy
-  #   Export:
-  #     Name: !Sub '${AWS::Region}-${AWS::StackName}-S3DeployManagedPolicy'
   BeanstalkServiceRole:
     Value: !Ref BeanstalkServiceRole
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-BeanstalkServiceRole'
-  # InstanceProfile:
-  #   Value: !Ref InstanceProfile
-  #   Export:
-  #     Name: !Sub '${AWS::Region}-${AWS::StackName}-InstanceProfile'
