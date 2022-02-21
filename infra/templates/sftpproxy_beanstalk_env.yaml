@@ -88,8 +88,6 @@ Resources:
         - Namespace: 'aws:autoscaling:launchconfiguration'
           OptionName: IamInstanceProfile
           Value: aws-elasticbeanstalk-ec2-role
-            # Fn::ImportValue:
-            #   !Sub 'us-east-1-${ApplicationStackName}-InstanceProfile'
         - Namespace: 'aws:autoscaling:launchconfiguration'
           OptionName: InstanceType
           Value: !Ref EC2InstanceType
