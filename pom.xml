@@ -16,7 +16,7 @@
 		<synapse.version>284.0</synapse.version>
 		<webappDirectory>${project.build.directory}/${project.build.finalName}</webappDirectory>
 		<gwtVersion>2.5.1</gwtVersion>
-		<org.springframework.version>4.3.25.RELEASE</org.springframework.version>
+		<org.springframework.version>5.3.18</org.springframework.version>
 		<guiceVersion>3.0-rc2</guiceVersion>
 		<log4j.version>2.17.1</log4j.version>
 	</properties>
